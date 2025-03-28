@@ -33,12 +33,12 @@ Language servers:
 ##### Key Bindings for Neovim:
 | Key | Action |
 |-----|--------|
-|<leader>rn	|Rename symbol|
+|\<leader\>rn	|Rename symbol|
 |gd	|Go to definition|
 |K	|Hover documentation|
-|<leader>ca|Code actions|
-|<leader>ff|Find files (Telescope)|
-|<leader>fg |Live grep (Telescope)|
-|<leader>fb	|Buffer list (Telescope)|
-|<C-space>  |Rust hover actions
-|<leader>gi	|Go implementations|
+|\<leader\>ca|Code actions|
+|\<leader\>ff|Find files (Telescope)|
+|\<leader\>fg |Live grep (Telescope)|
+|\<leader\>fb	|Buffer list (Telescope)|
+|\<C-space\>  |Rust hover actions
+|\<leader\>gi	|Go implementations|
