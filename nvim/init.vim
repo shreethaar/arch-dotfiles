@@ -1,5 +1,11 @@
 call plug#begin('~/.vim/plugged')
 
+" Golang Plugins
+Plug 'fatih/vim-go', { 'do': ':GoUpdateBinaries' }
+Plug 'neovim/nvim-lspconfig'
+Plug 'ray-x/go.nvim'
+Plug 'ray-x/guihua.lua', { 'do': 'cd lua && ./install.sh' }
+
 " LSP Configurations
 Plug 'neovim/nvim-lspconfig'
 
@@ -229,6 +235,100 @@ dap.configurations.c = {
 
 require('dapui').setup()
 
+-- Go Language Server Configuration
+local lspconfig = require('lspconfig')
+lspconfig.gopls.setup{
+  cmd = {'gopls'},
+  -- capabilities inherited from existing LSP setup
+  capabilities = require('cmp_nvim_lsp').default_capabilities(),
+  settings = {
+    gopls = {
+      experimentalPostfixCompletions = true,
+      analyses = {
+        unusedparams = true,
+        shadow = true,
+      },
+      staticcheck = true,
+    },
+  },
+  on_attach = function(client, bufnr)
+    -- Existing LSP keybindings
+    vim.keymap.set('n', 'gd', vim.lsp.buf.definition, { buffer = bufnr })
+    vim.keymap.set('n', 'K', vim.lsp.buf.hover, { buffer = bufnr })
+    vim.keymap.set('n', '<leader>rn', vim.lsp.buf.rename, { buffer = bufnr })
+    vim.keymap.set('n', '<leader>ca', vim.lsp.buf.code_action, { buffer = bufnr })
+    
+    -- Go-specific keybindings
+    vim.keymap.set('n', '<leader>gi', '<cmd>GoImplements<CR>', { buffer = bufnr })
+    vim.keymap.set('n', '<leader>gr', '<cmd>GoReferrers<CR>', { buffer = bufnr })
+  end
+}
+
+-- Go.nvim setup
+require('go').setup({
+  -- Autoformat on save
+  gofmt = 'gopls',
+  -- Additional tools
+  goimports = 'gopls',
+  
+  -- Diagnostic configuration
+  diagnostic = {
+    hdlr = true,  -- Enable handler
+    underline = true,
+    virtual_text = {spacing = 0},
+    signs = true,
+  },
+  
+  -- Linter configuration
+  linter = 'golangci-lint',
+  
+  -- Test configuration
+  test_runner = 'go',
+  
+  -- Run gofmt + goimports on save
+  run_in_floaterm = true
+})
+
+-- Add Go to Treesitter
+require('nvim-treesitter.configs').setup({
+  ensure_installed = { 
+    -- Existing languages 
+    'c', 'cpp', 'rust', 
+    -- Add Go
+    'go' 
+  },
+  highlight = {
+    enable = true,
+  },
+})
+EOF
+
+" Vim-Go configurations
+let g:go_highlight_types = 1
+let g:go_highlight_fields = 1
+let g:go_highlight_functions = 1
+let g:go_highlight_function_calls = 1
+let g:go_highlight_operators = 1
+let g:go_highlight_extra_types = 1
+let g:go_highlight_build_constraints = 1
+let g:go_auto_type_info = 1
+let g:go_fmt_command = "gopls"
+let g:go_imports_mode = "gopls"
+
+" Telescope configuration for Go
+lua << EOF
+require('telescope').setup{
+  pickers = {
+    -- Add Go-specific pickers
+    go_implementations = {
+      theme = "dropdown"
+    },
+    go_references = {
+      theme = "dropdown"
+    }
+  }
+}
+
 EOF
 
 " Telescope Keybindings
@@ -237,3 +337,5 @@ nnoremap <leader>fg <cmd>Telescope live_grep<cr>
 nnoremap <leader>fb <cmd>Telescope buffers<cr>
 nnoremap <leader>fh <cmd>Telescope help_tags<cr>
 nnoremap <leader>fr <cmd>Telescope oldfiles<cr>
+nnoremap <leader>gi <cmd>Telescope go_implementations<cr>
+nnoremap <leader>gr <cmd>Telescope go_references<cr>

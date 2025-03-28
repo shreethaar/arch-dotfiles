@@ -23,4 +23,22 @@
 
 ### Text Editors
 
+**Neovim**
+Language servers:
+- Rust: `rust-analyzer`
+- C#: `OmniSharp`
+- Go: `gopls`
+- C/C++: `clangd`
 
+##### Key Bindings for Neovim:
+| Key | Action |
+|-----|--------|
+|<leader>rn	|Rename symbol|
+|gd	|Go to definition|
+|K	|Hover documentation|
+|<leader>ca|Code actions|
+|<leader>ff|Find files (Telescope)|
+|<leader>fg |Live grep (Telescope)|
+|<leader>fb	|Buffer list (Telescope)|
+|<C-space>  |Rust hover actions
+|<leader>gi	|Go implementations|
