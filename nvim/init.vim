@@ -25,15 +25,18 @@ Plug 'mfussenegger/nvim-dap'
 Plug 'rcarriga/nvim-dap-ui'
 Plug 'nvim-neotest/nvim-nio' " Required for nvim-dap-ui
 
+" Telescope and its dependencies
+Plug 'nvim-lua/plenary.nvim'
+Plug 'nvim-telescope/telescope.nvim', { 'tag': '0.1.5' }
+Plug 'nvim-telescope/telescope-fzf-native.nvim', { 'do': 'cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release && cmake --install build --prefix build' }
 
 " smear-cursor https://github.com/sphamba/smear-cursor.nvim"
 Plug 'sphamba/smear-cursor.nvim'
 
+Plug 'nvzone/volt'  " Add dependency first
+Plug 'nvzone/typr'
+Plug 'ThePrimeagen/vim-be-good'
 call plug#end()
-
-
-call plug#end()
-lua require('smear_cursor').enabled = true
 
 " General settings
 set nocompatible            " disable compatibility to old-time vi
@@ -55,6 +58,8 @@ set mouse=a                 " enable mouse click
 set clipboard=unnamedplus   " use system clipboard
 filetype plugin on
 set ttyfast                 " speed up scrolling in Vim
+set relativenumber
+nnoremap <leader>rn :set relativenumber!<CR>
 
 " Highlight settings
 hi NonText ctermbg=none guibg=NONE
@@ -82,7 +87,46 @@ lua << EOF
 local nvim_lsp = require('lspconfig')
 local rt = require('rust-tools')
 local cmp = require('cmp')
-local cursor = lua require('smear_cursor').setup({ cursor_color = '#E8E45B' })
+local cursor = require('smear_cursor').setup({ cursor_color = '#E8E45B' })
+local telescope = require('telescope')
+
+-- Telescope setup
+telescope.setup{
+  defaults = {
+    -- Default configuration for telescope goes here
+    mappings = {
+      i = {
+        -- map actions.which_key to <C-h> (default: <C-/>)
+        -- actions.which_key shows the mappings for your picker,
+        -- e.g. git_{create, delete, ...}_branch for the git_branches picker
+        ["<C-h>"] = "which_key"
+      }
+    }
+  },
+  pickers = {
+    -- Default configuration for builtin pickers goes here
+    find_files = {
+      theme = "dropdown",
+    },
+    live_grep = {
+      theme = "dropdown",
+    },
+    buffers = {
+      theme = "dropdown",
+    }
+  },
+  extensions = {
+    fzf = {
+      fuzzy = true,                    -- false will only do exact matching
+      override_generic_sorter = true,  -- override the generic sorter
+      override_file_sorter = true,     -- override the file sorter
+      case_mode = "smart_case",        -- or "ignore_case" or "respect_case"
+    }
+  }
+}
+
+-- Load fzf extension
+require('telescope').load_extension('fzf')
 
 -- Autocompletion setup
 cmp.setup({
@@ -187,3 +231,9 @@ require('dapui').setup()
 
 EOF
 
+" Telescope Keybindings
+nnoremap <leader>ff <cmd>Telescope find_files<cr>
+nnoremap <leader>fg <cmd>Telescope live_grep<cr>
+nnoremap <leader>fb <cmd>Telescope buffers<cr>
+nnoremap <leader>fh <cmd>Telescope help_tags<cr>
+nnoremap <leader>fr <cmd>Telescope oldfiles<cr>
