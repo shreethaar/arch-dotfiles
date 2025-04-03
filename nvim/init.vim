@@ -1,13 +1,18 @@
 call plug#begin('~/.vim/plugged')
 
-" Golang Plugins
-Plug 'fatih/vim-go', { 'do': ':GoUpdateBinaries' }
+" Grubbox colorscheme"
+Plug 'ellisonleao/gruvbox.nvim'
+Plug 'nvim-tree/nvim-web-devicons' " Optional for file icons
+Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'} " Recommended for better syntax highlighting
+
+
+" Golang Plugins - just using ray-x/go.nvim now
 Plug 'neovim/nvim-lspconfig'
 Plug 'ray-x/go.nvim'
 Plug 'ray-x/guihua.lua', { 'do': 'cd lua && ./install.sh' }
 
 " LSP Configurations
-Plug 'neovim/nvim-lspconfig'
+" (removed duplicate nvim-lspconfig)
 
 " Rust Tools for enhanced Rust development
 Plug 'simrat39/rust-tools.nvim'
@@ -25,6 +30,8 @@ Plug 'L3MON4D3/LuaSnip' " Snippet engine
 
 " Treesitter for syntax highlighting
 Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}
+"Plug 'nvim-lua/plenary.nvim'
+"Plug 'nvim-telescope/telescope.nvim', { 'tag': '0.1.8' }
 
 " Debugging
 Plug 'mfussenegger/nvim-dap'
@@ -42,6 +49,8 @@ Plug 'sphamba/smear-cursor.nvim'
 Plug 'nvzone/volt'  " Add dependency first
 Plug 'nvzone/typr'
 Plug 'ThePrimeagen/vim-be-good'
+" Add Harpoon for quick file navigation
+Plug 'ThePrimeagen/harpoon'
 call plug#end()
 
 " General settings
@@ -87,8 +96,55 @@ let g:ale_linters = {
 \ 'cs': ['OmniSharp']
 \}
 
+" Grubbox configurations
+" Set up terminal colors
+set termguicolors
+" Set contrast level (options: 'hard', 'medium', 'soft')
+let g:gruvbox_contrast_dark = 'hard'
+
 " Lua configurations
 lua << EOF
+
+require("gruvbox").setup({
+    terminal_colors = true, -- add neovim terminal colors
+    undercurl = true,
+    underline = true,
+    bold = true,
+    italic = {
+        strings = true,
+        emphasis = true,
+        comments = true,
+        operators = false,
+        folds = true,
+    },
+    strikethrough = true,
+    invert_selection = false,
+    invert_signs = false,
+    invert_tabline = false,
+    invert_intend_guides = false,
+    inverse = true, -- invert background for search, diffs, statuslines and errors
+    contrast = "", -- can be "hard", "soft" or empty string
+    palette_overrides = {},
+    overrides = {},
+    dim_inactive = false,
+    transparent_mode = true,
+})
+
+
+local ascii_art = {
+    "  0x251e is sooo backkk!"
+}
+
+vim.api.nvim_create_autocmd("VimEnter", {
+    callback = function()
+        for _, line in ipairs(ascii_art) do
+            print(line)
+        end
+    end
+})
+
+
+
 -- Setup LSP and autocompletion
 local nvim_lsp = require('lspconfig')
 local rt = require('rust-tools')
@@ -119,6 +175,13 @@ telescope.setup{
     },
     buffers = {
       theme = "dropdown",
+    },
+    -- Add Go-specific pickers
+    go_implementations = {
+      theme = "dropdown"
+    },
+    go_references = {
+      theme = "dropdown"
     }
   },
   extensions = {
@@ -205,7 +268,7 @@ nvim_lsp.clangd.setup({
 
 -- Treesitter setup
 require('nvim-treesitter.configs').setup({
-  ensure_installed = { 'c', 'cpp', 'rust' }, -- Add other languages if needed
+  ensure_installed = { 'c', 'cpp', 'rust', 'go' }, -- Added Go
   highlight = {
     enable = true,
   },
@@ -258,17 +321,16 @@ lspconfig.gopls.setup{
     vim.keymap.set('n', '<leader>rn', vim.lsp.buf.rename, { buffer = bufnr })
     vim.keymap.set('n', '<leader>ca', vim.lsp.buf.code_action, { buffer = bufnr })
     
-    -- Go-specific keybindings
-    vim.keymap.set('n', '<leader>gi', '<cmd>GoImplements<CR>', { buffer = bufnr })
-    vim.keymap.set('n', '<leader>gr', '<cmd>GoReferrers<CR>', { buffer = bufnr })
+    -- Go-specific keybindings - now using go.nvim style commands
+    vim.keymap.set('n', '<leader>gi', '<cmd>lua require("telescope").extensions.go.implements()<CR>', { buffer = bufnr })
+    vim.keymap.set('n', '<leader>gr', '<cmd>lua require("telescope").extensions.go.references()<CR>', { buffer = bufnr })
   end
 }
 
--- Go.nvim setup
+-- Updated go.nvim setup
 require('go').setup({
   -- Autoformat on save
   gofmt = 'gopls',
-  -- Additional tools
   goimports = 'gopls',
   
   -- Diagnostic configuration
@@ -279,56 +341,32 @@ require('go').setup({
     signs = true,
   },
   
-  -- Linter configuration
+  -- Linter configuration - make sure it's installed
   linter = 'golangci-lint',
   
   -- Test configuration
   test_runner = 'go',
   
   -- Run gofmt + goimports on save
-  run_in_floaterm = true
+  run_in_floaterm = true,
+  
+  -- Include all the go tools
+  install_all_deps = true
 })
 
--- Add Go to Treesitter
-require('nvim-treesitter.configs').setup({
-  ensure_installed = { 
-    -- Existing languages 
-    'c', 'cpp', 'rust', 
-    -- Add Go
-    'go' 
-  },
-  highlight = {
-    enable = true,
-  },
-})
-EOF
+-- Harpoon setup
+local mark = require("harpoon.mark")
+local ui = require("harpoon.ui")
 
-" Vim-Go configurations
-let g:go_highlight_types = 1
-let g:go_highlight_fields = 1
-let g:go_highlight_functions = 1
-let g:go_highlight_function_calls = 1
-let g:go_highlight_operators = 1
-let g:go_highlight_extra_types = 1
-let g:go_highlight_build_constraints = 1
-let g:go_auto_type_info = 1
-let g:go_fmt_command = "gopls"
-let g:go_imports_mode = "gopls"
+-- Keymaps for Harpoon
+vim.keymap.set("n", "<leader>a", mark.add_file)
+vim.keymap.set("n", "<C-e>", ui.toggle_quick_menu)
 
-" Telescope configuration for Go
-lua << EOF
-require('telescope').setup{
-  pickers = {
-    -- Add Go-specific pickers
-    go_implementations = {
-      theme = "dropdown"
-    },
-    go_references = {
-      theme = "dropdown"
-    }
-  }
-}
-
+-- Navigation shortcuts
+vim.keymap.set("n", "<C-h>", function() ui.nav_file(1) end)
+vim.keymap.set("n", "<C-j>", function() ui.nav_file(2) end)
+vim.keymap.set("n", "<C-k>", function() ui.nav_file(3) end)
+vim.keymap.set("n", "<C-l>", function() ui.nav_file(4) end)
 EOF
 
 " Telescope Keybindings
@@ -337,5 +375,14 @@ nnoremap <leader>fg <cmd>Telescope live_grep<cr>
 nnoremap <leader>fb <cmd>Telescope buffers<cr>
 nnoremap <leader>fh <cmd>Telescope help_tags<cr>
 nnoremap <leader>fr <cmd>Telescope oldfiles<cr>
-nnoremap <leader>gi <cmd>Telescope go_implementations<cr>
-nnoremap <leader>gr <cmd>Telescope go_references<cr>
+" Updated Go keybindings for Telescope
+nnoremap <leader>gi <cmd>lua require('telescope').extensions.go.implements()<cr>
+nnoremap <leader>gr <cmd>lua require('telescope').extensions.go.references()<cr>
+
+
+
+" Set colorscheme
+colorscheme gruvbox
+
+" Optional: Set background (light or dark)
+set background=dark
