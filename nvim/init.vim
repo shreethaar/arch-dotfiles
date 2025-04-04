@@ -5,6 +5,10 @@ Plug 'ellisonleao/gruvbox.nvim'
 Plug 'nvim-tree/nvim-web-devicons' " Optional for file icons
 Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'} " Recommended for better syntax highlighting
 
+" fzf
+Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
+Plug 'junegunn/fzf.vim'
+
 
 " Golang Plugins - just using ray-x/go.nvim now
 Plug 'neovim/nvim-lspconfig'
@@ -74,6 +78,7 @@ set clipboard=unnamedplus   " use system clipboard
 filetype plugin on
 set ttyfast                 " speed up scrolling in Vim
 set relativenumber
+set shortmess+=I "disable the default intro message
 nnoremap <leader>rn :set relativenumber!<CR>
 
 " Highlight settings
@@ -101,6 +106,81 @@ let g:ale_linters = {
 set termguicolors
 " Set contrast level (options: 'hard', 'medium', 'soft')
 let g:gruvbox_contrast_dark = 'hard'
+
+
+" config for fzf
+if exists('g:loaded_fzf') && !exists('g:fzf_loaded')
+  " Set FZF default command (respects .gitignore if available)
+  if executable('rg')
+    " Use ripgrep for faster, smarter searching
+    set grepprg=rg\ --vimgrep\ --no-heading\ --smart-case
+    let $FZF_DEFAULT_COMMAND = 'rg --files --hidden --follow --glob "!.git/*"'
+  elseif executable('fd')
+    " Use fd as fallback
+    let $FZF_DEFAULT_COMMAND = 'fd --type f --hidden --follow --exclude .git'
+  else
+    " Default to find
+    let $FZF_DEFAULT_COMMAND = 'find . -type f -not -path "*/\.git/*"'
+  endif
+
+  " FZF layout configuration
+  let g:fzf_layout = { 'down': '~40%' }
+  let g:fzf_preview_window = ['right:50%:hidden', 'ctrl-/']
+  let g:fzf_buffers_jump = 1  " Jump to existing buffer if available
+
+  " Customize appearance
+  let g:fzf_colors = {
+      \ 'fg':      ['fg', 'Normal'],
+      \ 'bg':      ['bg', 'Normal'],
+      \ 'hl':      ['fg', 'Comment'],
+      \ 'fg+':     ['fg', 'CursorLine', 'CursorColumn', 'Normal'],
+      \ 'bg+':     ['bg', 'CursorLine', 'CursorColumn'],
+      \ 'hl+':     ['fg', 'Statement'],
+      \ 'info':    ['fg', 'PreProc'],
+      \ 'border':  ['fg', 'Ignore'],
+      \ 'prompt':  ['fg', 'Conditional'],
+      \ 'pointer': ['fg', 'Exception'],
+      \ 'marker':  ['fg', 'Keyword'],
+      \ 'spinner': ['fg', 'Label'],
+      \ 'header':  ['fg', 'Comment']
+      \ }
+
+  " Key mappings
+  nnoremap <silent> <C-p> :Files<CR>
+  nnoremap <silent> <leader>f :Files<CR>
+  nnoremap <silent> <leader>b :Buffers<CR>
+  nnoremap <silent> <leader>h :History<CR>
+  nnoremap <silent> <leader>t :BTags<CR>
+  nnoremap <silent> <leader>T :Tags<CR>
+  nnoremap <silent> <leader>l :BLines<CR>
+  nnoremap <silent> <leader>L :Lines<CR>
+  nnoremap <silent> <leader>m :Marks<CR>
+  nnoremap <silent> <leader>c :Commits<CR>
+  nnoremap <silent> <leader>C :BCommits<CR>
+  nnoremap <silent> <leader>rg :Rg<CR>
+  nnoremap <silent> <leader>gs :GFiles?<CR>
+
+  " Command mode mappings
+  cnoremap <C-p> <C-R>=fzf#vim#complete#path()<CR>
+  cnoremap <expr> <C-x><C-f> fzf#vim#complete#path('blah')
+
+  " Custom commands
+  command! -bang -nargs=* Rg
+        \ call fzf#vim#grep(
+        \   'rg --column --line-number --no-heading --color=always --smart-case '.shellescape(<q-args>), 1,
+        \   fzf#vim#with_preview({'options': '--delimiter : --nth 4..'}), <bang>0)
+
+  command! -bang -nargs=? -complete=dir Files
+        \ call fzf#vim#files(<q-args>, fzf#vim#with_preview(), <bang>0)
+
+  " Advanced: Customize statusline in FZF window
+  augroup fzf_status
+    autocmd! FileType fzf
+    autocmd FileType fzf set laststatus=0 noshowmode noruler
+          \| autocmd BufLeave <buffer> set laststatus=2 showmode ruler
+  augroup END
+endif
+
 
 " Lua configurations
 lua << EOF
@@ -132,7 +212,7 @@ require("gruvbox").setup({
 
 
 local ascii_art = {
-    "  0x251e is sooo backkk!"
+    "0x251e IS SOO BACCKKK!"
 }
 
 vim.api.nvim_create_autocmd("VimEnter", {
@@ -268,7 +348,7 @@ nvim_lsp.clangd.setup({
 
 -- Treesitter setup
 require('nvim-treesitter.configs').setup({
-  ensure_installed = { 'c', 'cpp', 'rust', 'go' }, -- Added Go
+  ensure_installed = { 'c', 'cpp', 'rust', 'go' ,'python', 'javascript', 'typescript'}, -- Added Go
   highlight = {
     enable = true,
   },
@@ -386,3 +466,100 @@ colorscheme gruvbox
 
 " Optional: Set background (light or dark)
 set background=dark
+
+
+
+" Create a custom startup screen with autocmd
+autocmd VimEnter * if argc() == 0 && !exists('s:std_in') | call YourCustomStartFunction() | endif
+
+function! YourCustomStartFunction()
+  " Clear the buffer
+  enew
+  " Set buffer options
+  setlocal buftype=nofile bufhidden=wipe nobuflisted noswapfile
+  
+  " Get the current window width
+  let s:width = &columns
+  
+  " Create a function to center text
+  function! s:CenterText(text)
+    let indent = (s:width - len(a:text)) / 2
+    return repeat(' ', indent > 0 ? indent : 0) . a:text
+  endfunction
+
+  " ASCII art as a single block - we'll center this as a whole
+  let s:nvim_logo = [
+        \ '                                            ',
+        \ '         ███╗   ██╗██╗   ██╗██╗███╗   ███╗',
+        \ '         ████╗  ██║██║   ██║██║████╗ ████║',
+        \ '         ██╔██╗ ██║██║   ██║██║██╔████╔██║',
+        \ '         ██║╚██╗██║╚██╗ ██╔╝██║██║╚██╔╝██║',
+        \ '         ██║ ╚████║ ╚████╔╝ ██║██║ ╚═╝ ██║',
+        \ '         ╚═╝  ╚═══╝  ╚═══╝  ╚═╝╚═╝     ╚═╝'
+        \ ]
+  
+  " Calculate the width of the ASCII art (assume all lines are the same width)
+  let s:logo_width = len(s:nvim_logo[0])
+  let s:logo_indent = (s:width - s:logo_width) / 2
+  let s:logo_space = repeat(' ', s:logo_indent > 0 ? s:logo_indent : 0)
+  
+  " Add your custom text/ASCII art with centering
+  let s:lines = []
+  call add(s:lines, '')
+  
+  " Add the logo with consistent padding
+  for line in s:nvim_logo
+    call add(s:lines, s:logo_space . line)
+  endfor
+  
+  " Add the rest of the content
+  call extend(s:lines, [
+        \ '',
+        \ s:CenterText('Run PlugUpdate and PlugUpgrade from time to time :)'),
+        \ '',
+        \ s:CenterText('─── Installed Plugins ───'),
+        \ '',
+        \ s:CenterText('Theme: gruvbox.nvim'),
+        \ s:CenterText('Icons: nvim-web-devicons'),
+        \ s:CenterText('Syntax: nvim-treesitter'),
+        \ '',
+        \ s:CenterText('─── Languages Support ───'),
+        \ '',
+        \ s:CenterText('Go: ray-x/go.nvim'),
+        \ s:CenterText('Rust: rust-tools.nvim'),
+        \ s:CenterText('C#: omnisharp-vim'),
+        \ '',
+        \ s:CenterText('─── Core Tools ───'),
+        \ '',
+        \ s:CenterText('Search: fzf + telescope'),
+        \ s:CenterText('LSP: nvim-lspconfig'),
+        \ s:CenterText('Completion: nvim-cmp'),
+        \ s:CenterText('Debug: nvim-dap'),
+        \ s:CenterText('Navigation: harpoon'),
+        \ '',
+        \ s:CenterText('─── Commands ───'),
+        \ '',
+        \ s:CenterText('[c] Create file    [f] Find files    [q] Quit'),
+        \ s:CenterText('[e] File explorer  [p] Find plugin   [?] Help'),
+        \ s:CenterText('[h] Harpoon        [t] Typr          [v] Vim-be-good'),
+        \ '',
+        \])
+  
+  " Add the lines to the buffer
+  call append(0, s:lines)
+  
+  " Set cursor position
+  normal! gg
+  " Make it non-modifiable
+  setlocal nomodifiable nomodified
+  " Add keymaps for your custom commands
+  nnoremap <buffer> c :enew<CR>
+  nnoremap <buffer> e :Explore<CR>
+  nnoremap <buffer> q :quit<CR>
+  nnoremap <buffer> ? :help<CR>
+  nnoremap <buffer> f :Telescope find_files<CR>
+  nnoremap <buffer> p :Telescope find_files cwd=~/.vim/plugged/<CR>
+  nnoremap <buffer> h :lua require("harpoon.ui").toggle_quick_menu()<CR>
+  nnoremap <buffer> t :Typr<CR>
+  nnoremap <buffer> v :VimBeGood<CR>
+endfunction
